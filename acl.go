@@ -1,13 +1,16 @@
 package locksmith
 
 import (
+	_ "embed"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/rbac"
 )
+
+//go:embed model.conf
+var modelConf string
 
 type Service struct {
 	enforcer *casbin.Enforcer
@@ -26,16 +29,12 @@ func newEnforcer(db *Database) (*casbin.Enforcer, error) {
 		return nil, fmt.Errorf("failed to create casbin table: %w", err)
 	}
 
-	modelPath := os.Getenv("CASBIN_MODEL_PATH")
-	if modelPath == "" {
-		modelPath = "model.conf"
-		if _, err := os.Stat(modelPath); os.IsNotExist(err) {
-			dir, _ := os.Getwd()
-			modelPath = filepath.Join(dir, "model.conf")
-		}
+	m, err := model.NewModelFromString(modelConf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load casbin model: %w", err)
 	}
 
-	enforcer, err := casbin.NewEnforcer(modelPath, adapter)
+	enforcer, err := casbin.NewEnforcer(m, adapter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create enforcer: %w", err)
 	}
