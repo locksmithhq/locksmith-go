@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (l *locksmith) generateAccessToken(ctx context.Context, input AccessTokenInput) (AccessTokenOutput, error) {
+func (l *locksmith) generateAccessToken(ctx context.Context, r *http.Request, input AccessTokenInput) (AccessTokenOutput, error) {
 	input.ClientID = l.clientID
 	input.ClientSecret = l.clientSecret
 	input.GrantType = "authorization_code"
@@ -25,6 +25,11 @@ func (l *locksmith) generateAccessToken(ctx context.Context, input AccessTokenIn
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", r.UserAgent())
+	req.Header.Set("X-Forwarded-For", extractIP(r))
+	if deviceID, err := r.Cookie("device_id"); err == nil {
+		req.Header.Set("X-Device-ID", deviceID.Value)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

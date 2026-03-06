@@ -6,6 +6,7 @@ require (
 	github.com/booscaaa/initializers/auth v1.0.3
 	github.com/casbin/casbin/v2 v2.135.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/mileusna/useragent v1.3.5
 )
 
 require (

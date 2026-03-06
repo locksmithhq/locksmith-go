@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/casbin/casbin/v2"
 )
@@ -156,11 +157,11 @@ func Initialize(db Database, baseUrl string, clientID string, clientSecret strin
 	return nil
 }
 
-func GenerateAccessToken(ctx context.Context, input AccessTokenInput) (AccessTokenOutput, error) {
+func GenerateAccessToken(ctx context.Context, r *http.Request, input AccessTokenInput) (AccessTokenOutput, error) {
 	if err := checkInitialized(); err != nil {
 		return AccessTokenOutput{}, err
 	}
-	return locksmithInstance.generateAccessToken(ctx, input)
+	return locksmithInstance.generateAccessToken(ctx, r, input)
 }
 
 func GenerateRefreshToken(ctx context.Context, input RefreshAccessTokenInput) (AccessTokenOutput, error) {
