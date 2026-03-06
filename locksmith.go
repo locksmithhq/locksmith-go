@@ -64,6 +64,7 @@ type AccessTokenInput struct {
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
 	GrantType    string `json:"grant_type"`
+	CodeVerifier string `json:"code_verifier"`
 }
 
 type RefreshAccessTokenInput struct {
@@ -98,22 +99,6 @@ type locksmithOption func(*locksmith)
 func WithHttpEnforce() locksmithOption {
 	return func(l *locksmith) {
 		l.httpEnforce = true
-	}
-}
-
-func NewRefreshAccessTokenInput(
-	refreshToken string,
-) RefreshAccessTokenInput {
-	return RefreshAccessTokenInput{
-		RefreshToken: refreshToken,
-	}
-}
-
-func NewAccessTokenInput(
-	code string,
-) AccessTokenInput {
-	return AccessTokenInput{
-		Code: code,
 	}
 }
 
