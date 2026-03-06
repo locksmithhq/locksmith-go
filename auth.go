@@ -12,11 +12,6 @@ type Authenticator struct {
 	*auth.Authenticator
 }
 
-type internalClaims struct {
-	Data map[auth.ContextValue]any
-	jwt.RegisteredClaims
-}
-
 type TokenClaims struct {
 	Sub    string `json:"sub"`
 	Client string `json:"client"`
@@ -46,31 +41,39 @@ func NewAuthenticator(clientSecret string) *Authenticator {
 	}
 }
 
-func VerifyToken(bearerToken string) (internalClaims, bool) {
+func VerifyToken(bearerToken string) (*TokenClaims, bool) {
+	if locksmithInstance == nil {
+		return nil, false
+	}
 	return verifyToken(bearerToken, locksmithInstance.clientSecret)
 }
 
-func VerifyTokenWithClientSecret(bearerToken string, clientSecret string) (internalClaims, bool) {
+func VerifyTokenWithClientSecret(bearerToken string, clientSecret string) (*TokenClaims, bool) {
 	return verifyToken(bearerToken, clientSecret)
 }
 
-func verifyToken(bearerToken string, clientSecret string) (internalClaims, bool) {
-	c := &TokenClaims{}
-	claims := &internalClaims{Data: c.GetFields()}
+func verifyToken(bearerToken string, clientSecret string) (*TokenClaims, bool) {
+	type combined struct {
+		Sub    string `json:"sub"`
+		Client string `json:"client"`
+		Domain string `json:"domain"`
+		jwt.RegisteredClaims
+	}
 
+	claims := &combined{}
 	token, err := jwt.ParseWithClaims(bearerToken, claims, func(token *jwt.Token) (any, error) {
 		return []byte(clientSecret), nil
 	})
 
-	if err != nil {
-		return internalClaims{}, false
+	if err != nil || !token.Valid || claims.ExpiresAt == nil {
+		return nil, false
 	}
 
-	if !token.Valid || claims.ExpiresAt == nil {
-		return internalClaims{}, false
-	}
-
-	return *claims, true
+	return &TokenClaims{
+		Sub:    claims.Sub,
+		Client: claims.Client,
+		Domain: claims.Domain,
+	}, true
 }
 
 func GetSignToken(claims *TokenClaims, duration time.Duration, clientSecret string) string {
