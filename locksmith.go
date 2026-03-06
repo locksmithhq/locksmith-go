@@ -28,47 +28,49 @@ func (e ApiError) Error() string {
 	return fmt.Sprintf("Error: %s\n  at %s\n  error: %s\n  trace: %s", e.Message, e.Local, e.Err, e.Trace)
 }
 
-type permissionsOutput struct {
-	Permissions []actionOutput `json:"permissions"`
+type PermissionsOutput struct {
+	Permissions []ActionOutput `json:"permissions"`
 }
 
-type actionOutput struct {
+type ActionOutput struct {
 	Role   string `json:"role"`
 	Domain string `json:"domain"`
 	Module string `json:"module"`
 	Action string `json:"action"`
 }
 
-type accountInput struct {
-	Id       string `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	RoleName string `json:"role_name"`
+type AccountInput struct {
+	Id                 string `json:"id"`
+	Name               string `json:"name"`
+	Email              string `json:"email"`
+	Username           string `json:"username"`
+	Password           string `json:"password"`
+	RoleName           string `json:"role_name"`
+	MustChangePassword bool   `json:"must_change_password"`
 }
 
-type accountOutput struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	RoleName string `json:"role_name"`
+type AccountOutput struct {
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	Email              string `json:"email"`
+	Username           string `json:"username"`
+	RoleName           string `json:"role_name"`
+	MustChangePassword bool   `json:"must_change_password"`
 }
 
-type accessTokenInput struct {
+type AccessTokenInput struct {
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
 	GrantType    string `json:"grant_type"`
 }
 
-type refreshAccessTokenInput struct {
+type RefreshAccessTokenInput struct {
 	RefreshToken string `json:"refresh_token"`
 	GrantType    string `json:"grant_type"`
 }
 
-type accessTokenOutput struct {
+type AccessTokenOutput struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
@@ -100,18 +102,25 @@ func WithHttpEnforce() locksmithOption {
 
 func NewRefreshAccessTokenInput(
 	refreshToken string,
-) refreshAccessTokenInput {
-	return refreshAccessTokenInput{
+) RefreshAccessTokenInput {
+	return RefreshAccessTokenInput{
 		RefreshToken: refreshToken,
 	}
 }
 
 func NewAccessTokenInput(
 	code string,
-) accessTokenInput {
-	return accessTokenInput{
+) AccessTokenInput {
+	return AccessTokenInput{
 		Code: code,
 	}
+}
+
+func checkInitialized() error {
+	if locksmithInstance == nil {
+		return errors.New("locksmith: not initialized — call locksmith.Initialize first")
+	}
+	return nil
 }
 
 func Initialize(db Database, baseUrl string, clientID string, clientSecret string, options ...locksmithOption) error {
@@ -147,83 +156,51 @@ func Initialize(db Database, baseUrl string, clientID string, clientSecret strin
 	return nil
 }
 
-func GenerateAccessToken(ctx context.Context, input accessTokenInput) (accessTokenOutput, error) {
-	output, err := locksmithInstance.generateAccessToken(ctx, input)
-	if err != nil {
-		return accessTokenOutput{}, err
+func GenerateAccessToken(ctx context.Context, input AccessTokenInput) (AccessTokenOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return AccessTokenOutput{}, err
 	}
-
-	return output, nil
+	return locksmithInstance.generateAccessToken(ctx, input)
 }
 
-func GenerateRefreshToken(ctx context.Context, input refreshAccessTokenInput) (accessTokenOutput, error) {
-	output, err := locksmithInstance.generateRefreshToken(ctx, input)
-	if err != nil {
-		return accessTokenOutput{}, err
+func GenerateRefreshToken(ctx context.Context, input RefreshAccessTokenInput) (AccessTokenOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return AccessTokenOutput{}, err
 	}
-
-	return output, nil
+	return locksmithInstance.generateRefreshToken(ctx, input)
 }
 
-func CreateAccount(ctx context.Context, input accountInput) (accountOutput, error) {
-	output, err := locksmithInstance.createAccount(ctx, input)
-	if err != nil {
-		return accountOutput{}, err
+func CreateAccount(ctx context.Context, input AccountInput) (AccountOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return AccountOutput{}, err
 	}
-
-	return output, nil
+	return locksmithInstance.createAccount(ctx, input)
 }
 
-func UpdateAccount(ctx context.Context, input accountInput) (accountOutput, error) {
-	output, err := locksmithInstance.updateAccount(ctx, input)
-	if err != nil {
-		return accountOutput{}, err
+func UpdateAccount(ctx context.Context, input AccountInput) (AccountOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return AccountOutput{}, err
 	}
-
-	return output, nil
+	return locksmithInstance.updateAccount(ctx, input)
 }
 
-func GetAccountByID(ctx context.Context, id string) (accountOutput, error) {
-	output, err := locksmithInstance.getAccountByID(ctx, id)
-	if err != nil {
-		return accountOutput{}, err
+func GetAccountByID(ctx context.Context, id string) (AccountOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return AccountOutput{}, err
 	}
-
-	return output, nil
+	return locksmithInstance.getAccountByID(ctx, id)
 }
 
-func GetPermissionsForUser(ctx context.Context, sub string, dom string) (permissionsOutput, error) {
-	output, err := locksmithInstance.getPermissionsForUserInDomain(ctx, sub, dom)
-	if err != nil {
-		return permissionsOutput{}, err
+func GetPermissionsForUser(ctx context.Context, sub string, dom string) (PermissionsOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return PermissionsOutput{}, err
 	}
-
-	return output, nil
+	return locksmithInstance.getPermissionsForUserInDomain(ctx, sub, dom)
 }
 
 func HttpEnforce(ctx context.Context, sub string, domain string, obj string, act string) (bool, error) {
-	output, err := locksmithInstance.enforce(ctx, sub, domain, obj, act)
-	if err != nil {
-		return false, nil
+	if err := checkInitialized(); err != nil {
+		return false, err
 	}
-
-	return output, nil
-}
-
-func NewAccountInput(
-	id string,
-	name string,
-	email string,
-	username string,
-	password string,
-	roleName string,
-) accountInput {
-	return accountInput{
-		Id:       id,
-		Name:     name,
-		Email:    email,
-		Username: username,
-		Password: password,
-		RoleName: roleName,
-	}
+	return locksmithInstance.enforce(ctx, sub, domain, obj, act)
 }
