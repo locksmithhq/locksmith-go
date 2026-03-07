@@ -228,6 +228,86 @@ func (l *locksmith) getPermissionsForUserInDomain(ctx context.Context, sub strin
 	return output, nil
 }
 
+func (l *locksmith) listSessions(ctx context.Context, accountID string) ([]SessionOutput, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.baseUrl+"/api/accounts/"+accountID+"/sessions", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(l.clientID, l.clientSecret)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		var errorResponse ApiError
+		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+			return nil, err
+		}
+		return nil, errorResponse
+	}
+
+	var output []SessionOutput
+	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+func (l *locksmith) getSessionsCount(ctx context.Context, accountID string) (SessionsCountOutput, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.baseUrl+"/api/accounts/"+accountID+"/sessions/count", nil)
+	if err != nil {
+		return SessionsCountOutput{}, err
+	}
+	req.SetBasicAuth(l.clientID, l.clientSecret)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return SessionsCountOutput{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		var errorResponse ApiError
+		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+			return SessionsCountOutput{}, err
+		}
+		return SessionsCountOutput{}, errorResponse
+	}
+
+	var output SessionsCountOutput
+	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
+		return SessionsCountOutput{}, err
+	}
+	return output, nil
+}
+
+func (l *locksmith) revokeSession(ctx context.Context, accountID string, sessionID string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, l.baseUrl+"/api/accounts/"+accountID+"/sessions/"+sessionID, nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(l.clientID, l.clientSecret)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		var errorResponse ApiError
+		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+			return err
+		}
+		return errorResponse
+	}
+
+	return nil
+}
+
 func (l *locksmith) enforce(ctx context.Context, sub string, dom string, obj string, act string) (bool, error) {
 	if !l.httpEnforce {
 		return Enforce(sub, dom, obj, act)
