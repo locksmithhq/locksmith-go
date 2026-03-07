@@ -79,6 +79,33 @@ type AccessTokenOutput struct {
 	TokenType    string `json:"token_type"`
 }
 
+type SessionOutput struct {
+	ID              string `json:"id"`
+	AccountID       string `json:"account_id"`
+	ClientID        string `json:"client_id"`
+	IPAddress       string `json:"ip_address"`
+	DeviceType      string `json:"device_type"`
+	Browser         string `json:"browser"`
+	BrowserVersion  string `json:"browser_version"`
+	OS              string `json:"os"`
+	OSVersion       string `json:"os_version"`
+	LocationCountry string `json:"location_country"`
+	LocationRegion  string `json:"location_region"`
+	LocationCity    string `json:"location_city"`
+	Revoked         bool   `json:"revoked"`
+	RevokedReason   string `json:"revoked_reason"`
+	ExpiresAt       string `json:"expires_at"`
+	LastActivity    string `json:"last_activity"`
+	CreatedAt       string `json:"created_at"`
+	AccountName     string `json:"account_name"`
+	AccountEmail    string `json:"account_email"`
+	ClientName      string `json:"client_name"`
+}
+
+type SessionsCountOutput struct {
+	Count int `json:"count"`
+}
+
 type locksmith struct {
 	baseUrl      string
 	clientID     string
@@ -189,4 +216,25 @@ func HttpEnforce(ctx context.Context, sub string, domain string, obj string, act
 		return false, err
 	}
 	return locksmithInstance.enforce(ctx, sub, domain, obj, act)
+}
+
+func ListSessions(ctx context.Context, accountID string) ([]SessionOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return nil, err
+	}
+	return locksmithInstance.listSessions(ctx, accountID)
+}
+
+func GetSessionsCount(ctx context.Context, accountID string) (SessionsCountOutput, error) {
+	if err := checkInitialized(); err != nil {
+		return SessionsCountOutput{}, err
+	}
+	return locksmithInstance.getSessionsCount(ctx, accountID)
+}
+
+func RevokeSession(ctx context.Context, accountID string, sessionID string) error {
+	if err := checkInitialized(); err != nil {
+		return err
+	}
+	return locksmithInstance.revokeSession(ctx, accountID, sessionID)
 }
