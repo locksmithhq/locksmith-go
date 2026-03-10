@@ -53,10 +53,13 @@ func VerifyTokenWithClientSecret(bearerToken string, clientSecret string) (*Toke
 }
 
 func verifyToken(bearerToken string, clientSecret string) (*TokenClaims, bool) {
-	type combined struct {
+	type dataFields struct {
 		Sub    string `json:"sub"`
 		Client string `json:"client"`
 		Domain string `json:"domain"`
+	}
+	type combined struct {
+		Data dataFields `json:"data"`
 		jwt.RegisteredClaims
 	}
 
@@ -70,9 +73,9 @@ func verifyToken(bearerToken string, clientSecret string) (*TokenClaims, bool) {
 	}
 
 	return &TokenClaims{
-		Sub:    claims.Sub,
-		Client: claims.Client,
-		Domain: claims.Domain,
+		Sub:    claims.Data.Sub,
+		Client: claims.Data.Client,
+		Domain: claims.Data.Domain,
 	}, true
 }
 
