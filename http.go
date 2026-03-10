@@ -24,11 +24,19 @@ func (l *locksmith) generateAccessToken(ctx context.Context, r *http.Request, in
 		return AccessTokenOutput{}, err
 	}
 
+	fp := Parse(r)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", r.UserAgent())
-	req.Header.Set("X-Forwarded-For", extractIP(r))
-	if deviceID, err := r.Cookie("device_id"); err == nil {
-		req.Header.Set("X-Device-ID", deviceID.Value)
+	req.Header.Set("X-Forwarded-For", fp.IPAddress)
+
+	deviceID := r.URL.Query().Get("device_id")
+	if deviceID == "" {
+		if cookie, err := r.Cookie("device_id"); err == nil {
+			deviceID = cookie.Value
+		}
+	}
+	if deviceID != "" {
+		req.Header.Set("X-Device-ID", deviceID)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
