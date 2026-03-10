@@ -272,6 +272,10 @@ func (l *locksmith) enforce(ctx context.Context, sub string, dom string, obj str
 
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusForbidden {
+		return false, nil
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		var errorResponse ApiError
 		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
